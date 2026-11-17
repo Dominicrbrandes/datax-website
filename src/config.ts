@@ -17,12 +17,24 @@ export const club = {
   school: 'San Diego State University',
   /** Logo shown top-left in the header, relative to public/. Leave empty to show the name alone. */
   logo: '/images/logo.png',
+  /**
+   * Photo shown in the preview card when someone shares a link to the site
+   * (iMessage, Slack, Discord, LinkedIn). Relative to public/. A wide photo
+   * works best. Leave empty for a text-only preview.
+   */
+  shareImage: '/images/events/fall-2026-qualcomm-finance-panel.jpg',
   /** One line, shown under the club name in the hero. Keep it short. */
   tagline: 'Students from every major, working with data together.',
   /** A sentence or two. Used for the hero body and search/social previews. */
   description:
     'DataX is an interdisciplinary student organization at San Diego State University that brings together students interested in working with data. Our members come from a variety of majors, experience levels, and backgrounds, including data science, analytics, statistics, econometrics, machine learning, business intelligence, and related fields.',
 };
+
+/**
+ * Inclusion line. Shown in the hero and the footer, because "do I belong here?"
+ * is the question most people have before they walk in. Keep it one short line.
+ */
+export const welcome = 'All majors welcome. No application, no dues.';
 
 export const meeting = {
   day: 'Wednesday',
@@ -37,20 +49,27 @@ export const meeting = {
 export const links = {
   /** No mailto: — the site adds it. */
   email: 'dataxsdsu@gmail.com',
+  /** Every sign-up and form in one place. The "Join us" button in the top bar. */
   linktree: 'https://linktr.ee/dataxsdsu',
   linkedin: 'https://www.linkedin.com/company/sdsu-datax',
-  /** Where event updates are posted first. */
+  /** Where event updates are posted first. The main button on the home page. */
   instagram: 'https://www.instagram.com/dataxsdsu/',
-  /** Discord invite. If set, it's the main "Join us" button. */
+  /** Discord invite. Shown with the next meeting and at the bottom of the home page. */
   discord: 'https://discord.gg/WA9GrxgGSA',
 };
 
-/** Nav items. Add a page here when you add one to src/pages/. */
+/**
+ * Nav items. Add a page here when you add one to src/pages/.
+ *
+ * Home is listed as a tab like the others, so it is obvious you can click it.
+ * There is no separate contact page: the social links live in the footer of
+ * every page, and the "Join us" button goes to Linktree.
+ */
 export const nav: { label: string; href: string }[] = [
+  { label: 'Home', href: '/' },
   { label: 'Executive Board', href: '/board' },
   { label: 'Calendar', href: '/calendar' },
   { label: 'Past Events', href: '/past-events' },
-  { label: "Let's Connect", href: '/connect' },
 ];
 
 /** What we do — the three cards on the home page. */

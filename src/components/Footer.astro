@@ -1,5 +1,5 @@
 ---
-import { club, meeting, links } from '../config';
+import { club, meeting, links, welcome } from '../config';
 
 /** Empty values in config.ts are filtered out, so placeholders never render. */
 const social = [
@@ -20,6 +20,7 @@ const year = new Date().getFullYear();
       <p class="footer__meta">
         {meeting.day} at {meeting.time} · {meeting.location}
       </p>
+      <p class="footer__welcome">{welcome}</p>
     </div>
 
     {
@@ -39,10 +40,11 @@ const year = new Date().getFullYear();
 </footer>
 
 <style>
+  /* White, not a grey slab. One hairline rule separates it from the page. */
   .footer {
-    margin-top: var(--space-16);
-    padding-block: var(--space-12) var(--space-8);
-    background-color: var(--color-surface-alt);
+    margin-top: 0;
+    padding-block: var(--space-16) var(--space-12);
+    background-color: var(--color-bg);
     border-top: 1px solid var(--color-border);
   }
 
@@ -55,12 +57,23 @@ const year = new Date().getFullYear();
   }
 
   .footer__name {
-    font-weight: 650;
+    font-size: var(--text-lg);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
   }
 
   .footer__meta {
     color: var(--color-text-muted);
     font-size: var(--text-sm);
+  }
+
+  .footer__welcome {
+    margin-top: var(--space-3);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .footer__links {
@@ -70,8 +83,10 @@ const year = new Date().getFullYear();
   }
 
   .footer__links a {
-    font-size: var(--text-sm);
-    font-weight: 550;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     text-decoration: none;
   }
 

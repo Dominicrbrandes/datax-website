@@ -1,0 +1,239 @@
+---
+/**
+ * The next meeting, surfaced where people land instead of making them scroll
+ * the whole calendar.
+ *
+ * This is a static site, so "next" would normally freeze at whatever the build
+ * date was and go stale the moment a meeting passes. To avoid that, every
+ * event is rendered and all but one hidden; the build picks the right one, and
+ * the inline script re-picks it on load. With JavaScript off you still get the
+ * build-time answer, which is correct until the next meeting passes.
+ */
+import { calendar } from '../data/events';
+import { links, meeting } from '../config';
+import { url } from '../utils/url';
+import { formatDate, dateParts } from '../utils/date';
+import { todayISO, splitEvents, CLUB_TIME_ZONE } from '../utils/events';
+
+interface Props {
+  /** Heading above the block. */
+  title?: string;
+}
+
+const { title = 'Up next' } = Astro.props;
+
+const today = todayISO();
+const sorted = [...calendar].sort((a, b) => a.date.localeCompare(b.date));
+const { upcoming } = splitEvents(calendar, today);
+const defaultDate = upcoming[0]?.date;
+
+const joinHref = links.discord || (links.email ? `mailto:${links.email}` : '');
+---
+
+<section class="upnext" data-upnext>
+  <div class="container upnext__inner">
+    <p class="eyebrow">{title}</p>
+
+    <ul class="upnext__list" role="list">
+      {
+        sorted.map((event) => {
+          const { month, day } = dateParts(event.date);
+          return (
+            <li class="upnext__item" data-date={event.date} hidden={event.date !== defaultDate}>
+              <div class="upnext__date" aria-hidden="true">
+                <span class="upnext__month">{month}</span>
+                <span class="upnext__day">{day}</span>
+              </div>
+
+              <div class="upnext__body">
+                <h2 class="upnext__title">{event.title}</h2>
+                <p class="upnext__meta">
+                  <time datetime={event.date}>{formatDate(event.date)}</time>
+                  <span class="upnext__sep" aria-hidden="true">·</span>
+                  {event.time}
+                  <span class="upnext__sep" aria-hidden="true">·</span>
+                  <strong class="upnext__where">{event.location}</strong>
+                </p>
+                <p class="upnext__summary">{event.description}</p>
+
+                <div class="upnext__actions">
+                  {joinHref && (
+                    <a class="button button--primary upnext__button" href={joinHref}>
+                      Join our Discord
+                    </a>
+                  )}
+                  <a class="button button--secondary upnext__button" href={url('/calendar')}>
+                    See the full calendar
+                  </a>
+                </div>
+              </div>
+            </li>
+          );
+        })
+      }
+    </ul>
+
+    {/* Shown once every meeting on the calendar has passed. */}
+    <p class="upnext__empty" data-upnext-empty hidden={upcoming.length > 0}>
+      No meetings are on the calendar right now. We normally meet on {meeting.day}s at{' '}
+      {meeting.time} in {meeting.location}. Check our{' '}
+      {links.instagram ? <a href={links.instagram}>Instagram</a> : 'socials'} for the next one.
+    </p>
+  </div>
+</section>
+
+<script is:inline define:vars={{ timeZone: CLUB_TIME_ZONE }}>
+  (function () {
+    var root = document.querySelector('[data-upnext]');
+    if (!root) return;
+
+    // "Today" on the club's clock, so a meeting stays up until midnight in
+    // San Diego wherever the visitor happens to be.
+    var today;
+    try {
+      var parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(new Date());
+      var found = {};
+      for (var p = 0; p < parts.length; p++) found[parts[p].type] = parts[p].value;
+      today = found.year + '-' + found.month + '-' + found.day;
+    } catch (error) {
+      today = new Date().toISOString().slice(0, 10);
+    }
+
+    var chosen = null;
+    var items = root.querySelectorAll('[data-date]');
+    for (var i = 0; i < items.length; i++) {
+      items[i].hidden = true;
+      if (!chosen && items[i].getAttribute('data-date') >= today) chosen = items[i];
+    }
+    var empty = root.querySelector('[data-upnext-empty]');
+    if (chosen) {
+      chosen.hidden = false;
+      if (empty) empty.hidden = true;
+    } else if (empty) {
+      empty.hidden = false;
+    }
+  })();
+</script>
+
+<style>
+  .upnext {
+    padding-block: var(--space-16);
+    border-bottom: 1px solid var(--color-border);
+    background-color: var(--color-surface-alt);
+  }
+
+  .upnext__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .upnext__item {
+    display: flex;
+    gap: var(--space-8);
+    margin-top: var(--space-6);
+  }
+
+  .upnext__item[hidden] {
+    display: none;
+  }
+
+  .upnext__date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    align-self: start;
+    flex-shrink: 0;
+    width: 5.5rem;
+    padding-block: var(--space-2);
+    border-right: 1px solid var(--color-border);
+    line-height: 1.02;
+  }
+
+  .upnext__month {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .upnext__day {
+    font-size: 3rem;
+    font-weight: 300;
+    letter-spacing: -0.03em;
+  }
+
+  .upnext__body {
+    min-width: 0;
+  }
+
+  .upnext__title {
+    font-size: var(--text-xl);
+    font-weight: 400;
+  }
+
+  .upnext__meta {
+    margin-top: var(--space-2);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+
+  /* The room is the thing people are actually looking for. */
+  .upnext__where {
+    color: var(--color-text);
+    font-weight: 500;
+  }
+
+  .upnext__sep {
+    padding-inline: 0.4em;
+  }
+
+  .upnext__summary {
+    max-width: 58ch;
+    margin-top: var(--space-4);
+  }
+
+  .upnext__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-top: var(--space-8);
+  }
+
+  .upnext__button {
+    padding: var(--space-3) var(--space-6);
+  }
+
+  .upnext__empty {
+    max-width: 58ch;
+    margin-top: var(--space-6);
+    color: var(--color-text-muted);
+  }
+
+  @media (max-width: 48rem) {
+    .upnext__item {
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .upnext__date {
+      flex-direction: row;
+      align-items: baseline;
+      gap: var(--space-3);
+      width: auto;
+      padding: 0 0 var(--space-3);
+      border-right: 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .upnext__day {
+      font-size: var(--text-xl);
+    }
+  }
+</style>

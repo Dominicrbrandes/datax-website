@@ -18,24 +18,23 @@ const { eyebrow, title } = Astro.props;
 </section>
 
 <style>
+  /* Flat. The old radial wash is gone; separation comes from the rule and
+     the generous space below the headline. */
   .intro {
-    padding-block: var(--space-16) var(--space-8);
-    background-image: radial-gradient(
-      50rem 26rem at 6% -30%,
-      var(--color-glow-1),
-      transparent 66%
-    );
+    padding-block: var(--space-24) var(--space-12);
+    border-bottom: 1px solid var(--color-border);
   }
 
   .intro__title {
-    margin-top: var(--space-2);
+    margin-top: var(--space-4);
     font-size: var(--text-3xl);
-    font-weight: 750;
+    font-weight: 300;
   }
 
   .intro__body {
-    margin-top: var(--space-4);
-    max-width: 60ch;
+    margin-top: var(--space-6);
+    max-width: 52ch;
+    font-size: var(--text-lg);
     color: var(--color-text-muted);
   }
 

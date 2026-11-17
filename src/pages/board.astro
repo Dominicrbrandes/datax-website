@@ -5,6 +5,7 @@ import PhotoGrid from '../components/PhotoGrid.astro';
 import Avatar from '../components/Avatar.astro';
 import EmptyState from '../components/EmptyState.astro';
 import { boardYear, groupPhotos, officers, advisor } from '../data/board';
+import { url } from '../utils/url';
 ---
 
 <BaseLayout
@@ -33,13 +34,22 @@ import { boardYear, groupPhotos, officers, advisor } from '../data/board';
         officers.length > 0 ? (
           <ul class="officers" role="list">
             {officers.map((officer) => (
-              <li class="officer card">
-                <Avatar name={officer.name} photo={officer.photo} size="lg" />
+              <li class="officer">
+                {officer.photo ? (
+                  <img class="officer__photo" src={url(officer.photo)} alt={officer.name} loading="lazy" />
+                ) : (
+                  <div class="officer__photo officer__photo--empty">
+                    <Avatar name={officer.name} size="lg" />
+                  </div>
+                )}
                 <h3 class="officer__name">{officer.name}</h3>
-                <p class="officer__position">{officer.position}</p>
-                <p class="officer__meta">
-                  {officer.major} · {officer.year}
-                </p>
+                {officer.position && <p class="officer__position">{officer.position}</p>}
+                {/* Shows "Major · Year", or just whichever one is filled in. */}
+                {(officer.major || officer.year) && (
+                  <p class="officer__meta">
+                    {[officer.major, officer.year].filter(Boolean).join(' · ')}
+                  </p>
+                )}
               </li>
             ))}
           </ul>
@@ -79,27 +89,47 @@ import { boardYear, groupPhotos, officers, advisor } from '../data/board';
   .officers {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
-    gap: var(--space-6);
-    margin-top: var(--space-6);
+    gap: var(--space-12) var(--space-8);
+    margin-top: var(--space-12);
     padding: 0;
     list-style: none;
   }
 
+  /* Portrait tiles, left aligned, no panel behind them. The photograph is the
+     card; wrapping it in a grey box would only add noise. */
   .officer {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
+  }
+
+  .officer__photo {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    /* Headshots are framed with the face high, so bias the crop upward. */
+    object-position: 50% 28%;
+    border-radius: var(--radius-lg);
+    background-color: var(--color-surface-alt);
+  }
+
+  .officer__photo--empty {
+    display: grid;
+    place-items: center;
   }
 
   .officer__name {
-    margin-top: var(--space-4);
+    margin-top: var(--space-6);
     font-size: var(--text-lg);
+    font-weight: 500;
   }
 
   .officer__position {
-    color: var(--color-accent);
-    font-weight: 600;
+    margin-top: var(--space-1);
+    color: var(--color-text);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .officer__meta {
@@ -118,6 +148,30 @@ import { boardYear, groupPhotos, officers, advisor } from '../data/board';
 
   .advisor .officer__name {
     margin-top: 0;
+  }
+
+  /* Phones: two officers per row. One per row made every photo fill the
+     screen, so the page was ten screens long and the smaller headshots were
+     stretched well past their real size. */
+  @media (max-width: 36rem) {
+    .officers {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-8) var(--space-4);
+      margin-top: var(--space-8);
+    }
+
+    .officer__name {
+      margin-top: var(--space-4);
+      font-size: var(--text-base);
+    }
+
+    .officer__position {
+      font-size: 0.6875rem;
+    }
+
+    .officer__meta {
+      font-size: 0.8125rem;
+    }
   }
 
   @media (max-width: 30rem) {

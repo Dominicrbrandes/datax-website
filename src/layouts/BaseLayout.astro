@@ -14,8 +14,10 @@ interface Props {
 
 const { title, description = club.description } = Astro.props;
 
-const pageTitle = title ? `${title} · ${club.name}` : `${club.name} — ${club.tagline}`;
+const pageTitle = title ? `${title} · ${club.name}` : `${club.name} · ${club.tagline}`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+/** Link previews need an absolute URL, so this is resolved against the site. */
+const shareImage = club.shareImage ? new URL(url(club.shareImage), Astro.site) : undefined;
 ---
 
 <!doctype html>
@@ -33,7 +35,8 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta name="twitter:card" content="summary_large_image" />
+    {shareImage && <meta property="og:image" content={shareImage} />}
+    <meta name="twitter:card" content={shareImage ? 'summary_large_image' : 'summary'} />
 
     <meta name="generator" content={Astro.generator} />
   </head>

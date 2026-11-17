@@ -4,18 +4,15 @@ import PageIntro from '../components/PageIntro.astro';
 import PhotoGrid from '../components/PhotoGrid.astro';
 import Avatar from '../components/Avatar.astro';
 import EmptyState from '../components/EmptyState.astro';
-import { calendar, type CalendarEvent } from '../data/events';
-import { links } from '../config';
+import UpNext from '../components/UpNext.astro';
+import { calendar } from '../data/events';
+import { links, welcome } from '../config';
 import { formatDate, dateParts, semesterOf } from '../utils/date';
+import { todayISO, splitEvents, groupBySemester, CLUB_TIME_ZONE } from '../utils/events';
 
-const sorted = [...calendar].sort((a, b) => a.date.localeCompare(b.date));
-
-/** Keep semesters in date order: Fall 2026 before Spring 2027. */
-const semesters = new Map<string, CalendarEvent[]>();
-for (const event of sorted) {
-  const key = semesterOf(event.date);
-  semesters.set(key, [...(semesters.get(key) ?? []), event]);
-}
+const today = todayISO();
+const { upcoming, past } = splitEvents(calendar, today);
+const semesters = groupBySemester(upcoming, semesterOf);
 ---
 
 <BaseLayout
@@ -23,8 +20,7 @@ for (const event of sorted) {
   description="DataX General Body Meetings and socials for the 2026–2027 academic year: dates, times, locations, and guest speakers."
 >
   <PageIntro eyebrow="2026–2027" title="Calendar">
-    Every General Body Meeting and social this academic year. All majors and experience levels are
-    welcome at every one.
+    Every General Body Meeting and social this academic year. {welcome}
     {
       links.instagram && (
         <>
@@ -34,34 +30,33 @@ for (const event of sorted) {
     }
   </PageIntro>
 
-  <section class="section section--tight">
+  <UpNext />
+
+  <!-- Still to come -->
+  <section class="section section--tight" data-slot="upcoming">
     <div class="container">
-      {
-        semesters.size === 0 && (
-          <EmptyState>The 2026–2027 meeting schedule will be posted here soon.</EmptyState>
-        )
-      }
+      <h2 class="section__title">Upcoming</h2>
 
       {
         [...semesters].map(([semester, events]) => (
-          <div class="semester">
-            <h2 class="section__title">{semester}</h2>
+          <div class="semester" data-group>
+            <h3 class="semester__title">{semester}</h3>
             <ol class="events" role="list">
               {events.map((event) => {
                 const { month, day } = dateParts(event.date);
                 return (
-                  <li class="event card">
+                  <li class="event card" data-date={event.date}>
                     <div class="event__date" aria-hidden="true">
                       <span class="event__month">{month}</span>
                       <span class="event__day">{day}</span>
                     </div>
 
                     <div class="event__body">
-                      <h3 class="event__title">{event.title}</h3>
+                      <h4 class="event__title">{event.title}</h4>
                       <p class="event__meta">
                         <time datetime={event.date}>{formatDate(event.date)}</time> · {event.time}
                         <br />
-                        {event.location}
+                        <strong class="event__where">{event.location}</strong>
                       </p>
                       <p class="event__description">{event.description}</p>
 
@@ -78,7 +73,9 @@ for (const event of sorted) {
                                     speaker.name
                                   )}
                                 </p>
-                                {speaker.position && <p class="speaker__position">{speaker.position}</p>}
+                                {speaker.position && (
+                                  <p class="speaker__position">{speaker.position}</p>
+                                )}
                               </div>
                             </li>
                           ))}
@@ -98,17 +95,157 @@ for (const event of sorted) {
           </div>
         ))
       }
+
+      <div class="spaced" data-empty hidden={upcoming.length > 0}>
+        <EmptyState>
+          Nothing is scheduled right now. Next semester's meetings will be posted here.
+        </EmptyState>
+      </div>
+    </div>
+  </section>
+
+  <!-- Already happened -->
+  <section class="section section--tight past" data-slot="past">
+    <div class="container">
+      <h2 class="section__title">Past meetings</h2>
+      <p class="past__note">Meetings and socials that have already happened, most recent first.</p>
+
+      <ol class="events events--past" role="list" data-past-list>
+        {
+          past.map((event) => {
+            const { month, day } = dateParts(event.date);
+            return (
+              <li class="event card" data-date={event.date}>
+                <div class="event__date" aria-hidden="true">
+                  <span class="event__month">{month}</span>
+                  <span class="event__day">{day}</span>
+                </div>
+
+                <div class="event__body">
+                  <h4 class="event__title">{event.title}</h4>
+                  <p class="event__meta">
+                    <time datetime={event.date}>{formatDate(event.date)}</time> · {event.time}
+                    <br />
+                    <strong class="event__where">{event.location}</strong>
+                  </p>
+                  <p class="event__description">{event.description}</p>
+
+                  {event.speakers && event.speakers.length > 0 && (
+                    <ul class="speakers" role="list">
+                      {event.speakers.map((speaker) => (
+                        <li class="speaker">
+                          <Avatar name={speaker.name} photo={speaker.photo} />
+                          <div>
+                            <p class="speaker__name">
+                              {speaker.profile ? (
+                                <a href={speaker.profile}>{speaker.name}</a>
+                              ) : (
+                                speaker.name
+                              )}
+                            </p>
+                            {speaker.position && (
+                              <p class="speaker__position">{speaker.position}</p>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {event.photos && event.photos.length > 0 && (
+                    <div class="event__photos">
+                      <PhotoGrid photos={event.photos} />
+                    </div>
+                  )}
+                </div>
+              </li>
+            );
+          })
+        }
+      </ol>
+
+      <div class="spaced" data-empty hidden={past.length > 0}>
+        <EmptyState>Nothing has happened yet this year.</EmptyState>
+      </div>
     </div>
   </section>
 </BaseLayout>
 
+<script is:inline define:vars={{ timeZone: CLUB_TIME_ZONE }}>
+  /**
+   * The build decides what is upcoming and what is past, which stays correct
+   * until the next meeting goes by. This moves any meeting that has since
+   * passed down into "Past meetings" so the page does not go stale between
+   * deploys. Time only moves one way, so only upcoming -> past is needed.
+   */
+  (function () {
+    var upcoming = document.querySelector('[data-slot="upcoming"]');
+    var past = document.querySelector('[data-slot="past"]');
+    if (!upcoming || !past) return;
+
+    var pastList = past.querySelector('[data-past-list]');
+
+    // "Today" on the club's clock, so a meeting only moves down after
+    // midnight in San Diego.
+    var today;
+    try {
+      var parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(new Date());
+      var found = {};
+      for (var p = 0; p < parts.length; p++) found[parts[p].type] = parts[p].value;
+      today = found.year + '-' + found.month + '-' + found.day;
+    } catch (error) {
+      today = new Date().toISOString().slice(0, 10);
+    }
+
+    if (pastList) {
+      var items = upcoming.querySelectorAll('[data-date]');
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].getAttribute('data-date') < today) {
+          pastList.insertBefore(items[i], pastList.firstChild);
+        }
+      }
+    }
+
+    // Hide a semester heading once every meeting under it has moved out.
+    var groups = upcoming.querySelectorAll('[data-group]');
+    for (var g = 0; g < groups.length; g++) {
+      groups[g].hidden = !groups[g].querySelector('[data-date]');
+    }
+
+    [upcoming, past].forEach(function (section) {
+      var empty = section.querySelector('[data-empty]');
+      if (empty) empty.hidden = !!section.querySelector('[data-date]');
+    });
+  })();
+</script>
+
 <style>
   .section--tight {
-    padding-block: var(--space-8);
+    padding-block: var(--space-12);
+  }
+
+  .spaced {
+    margin-top: var(--space-6);
   }
 
   .semester + .semester {
     margin-top: var(--space-12);
+  }
+
+  .semester[hidden] {
+    display: none;
+  }
+
+  .semester__title {
+    margin-top: var(--space-8);
+    font-size: var(--text-xl);
+    font-weight: 400;
+    color: var(--color-text-muted);
   }
 
   .events {
@@ -124,30 +261,33 @@ for (const event of sorted) {
     gap: var(--space-6);
   }
 
+  /* The date reads as a typographic block, not a colored chip. */
   .event__date {
     display: flex;
     flex-direction: column;
     align-items: center;
     align-self: start;
     flex-shrink: 0;
-    width: 4rem;
+    width: 4.5rem;
     padding-block: var(--space-2);
-    background-color: var(--color-accent-soft);
-    border-radius: var(--radius);
-    line-height: 1.1;
+    background-color: transparent;
+    border-right: 1px solid var(--color-border);
+    border-radius: 0;
+    line-height: 1.05;
   }
 
   .event__month {
-    color: var(--color-accent);
-    font-size: var(--text-sm);
-    font-weight: 650;
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.14em;
   }
 
   .event__day {
-    font-size: var(--text-2xl);
-    font-weight: 700;
+    font-size: 2.25rem;
+    font-weight: 300;
+    letter-spacing: -0.03em;
   }
 
   .event__body {
@@ -157,6 +297,7 @@ for (const event of sorted) {
 
   .event__title {
     font-size: var(--text-lg);
+    font-weight: 500;
   }
 
   .event__meta {
@@ -165,17 +306,25 @@ for (const event of sorted) {
     font-size: var(--text-sm);
   }
 
+  /* The room is what people are actually scanning for. */
+  .event__where {
+    color: var(--color-text);
+    font-weight: 500;
+  }
+
   .event__description {
     margin-top: var(--space-3);
   }
 
+  /* The event card is already grey, so the speaker block goes white to
+     separate rather than disappearing into it. */
   .speakers {
     display: grid;
     gap: var(--space-4);
-    margin-top: var(--space-4);
-    padding: var(--space-4);
-    background-color: var(--color-surface-alt);
-    border-radius: var(--radius);
+    margin-top: var(--space-6);
+    padding: var(--space-6);
+    background-color: var(--color-bg);
+    border-radius: var(--radius-lg);
     list-style: none;
   }
 
@@ -186,7 +335,7 @@ for (const event of sorted) {
   }
 
   .speaker__name {
-    font-weight: 650;
+    font-weight: 500;
   }
 
   .speaker__position {
@@ -198,6 +347,25 @@ for (const event of sorted) {
     margin-top: var(--space-4);
   }
 
+  /* Past meetings are reference material, so they sit back a little. */
+  .past {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .past__note {
+    margin-top: var(--space-3);
+    color: var(--color-text-muted);
+  }
+
+  .events--past .event {
+    opacity: 0.75;
+    transition: opacity 180ms ease;
+  }
+
+  .events--past .event:hover {
+    opacity: 1;
+  }
+
   @media (max-width: 30rem) {
     .event {
       flex-direction: column;
@@ -207,9 +375,11 @@ for (const event of sorted) {
     .event__date {
       flex-direction: row;
       align-items: baseline;
-      gap: var(--space-2);
+      gap: var(--space-3);
       width: auto;
-      padding: var(--space-1) var(--space-3);
+      padding: 0 0 var(--space-3);
+      border-right: 0;
+      border-bottom: 1px solid var(--color-border);
     }
 
     .event__day {

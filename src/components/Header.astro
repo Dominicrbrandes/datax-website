@@ -2,8 +2,12 @@
 import { club, nav, links } from '../config';
 import { url } from '../utils/url';
 
-/** Join the club via Discord if we have it, otherwise fall back to email. */
-const joinHref = links.discord || (links.email ? `mailto:${links.email}` : '');
+/**
+ * The bar's "Join us" goes to Linktree, which collects every sign-up and form
+ * in one place. Discord and email are fallbacks if Linktree is ever cleared
+ * from config.ts.
+ */
+const joinHref = links.linktree || links.discord || (links.email ? `mailto:${links.email}` : '');
 
 const trim = (path: string) => path.replace(/\/$/, '');
 const current = trim(Astro.url.pathname);
@@ -11,9 +15,17 @@ const current = trim(Astro.url.pathname);
 
 <header class="header">
   <div class="container header__inner">
-    <a class="header__brand" href={url()}>
-      {club.logo && <img class="header__logo" src={url(club.logo)} alt="" />}
-      <span>{club.name}</span>
+    {/* The logo carries the branding and links home. "Home" itself is a tab
+        in the nav with the other pages (see nav in config.ts), so it reads as
+        something you can click rather than a label next to the logo. */}
+    <a class="header__brand" href={url()} aria-label={`${club.name} home`}>
+      {
+        club.logo ? (
+          <img class="header__logo" src={url(club.logo)} alt={club.name} />
+        ) : (
+          <span class="header__name">{club.name}</span>
+        )
+      }
     </a>
 
     {
@@ -42,107 +54,148 @@ const current = trim(Astro.url.pathname);
 </header>
 
 <style>
+  /* Solid white, one hairline rule, no blur and no translucency. */
   .header {
     position: sticky;
     top: 0;
     z-index: 5;
-    background-color: color-mix(in srgb, var(--color-bg) 85%, transparent);
-    backdrop-filter: blur(10px);
+    background-color: var(--color-bg);
     border-bottom: 1px solid var(--color-border);
   }
 
+  /* Fixed padding rather than a min-height, so the space above and below the
+     logo stays put when the logo size changes. */
   .header__inner {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    column-gap: var(--space-6);
-    min-height: 4rem;
+    column-gap: var(--space-8);
+    padding-block: 0.875rem;
   }
 
   .header__brand {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--space-4);
     margin-right: auto;
     color: var(--color-text);
-    font-size: var(--text-lg);
-    font-weight: 700;
-    letter-spacing: -0.02em;
     text-decoration: none;
   }
 
-  .header__brand:hover {
-    color: var(--color-text);
+  /* Only shown if config.ts has no logo. */
+  .header__name {
+    font-size: var(--text-lg);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
   }
 
-  /* The logo has its own dark background, so show it as a rounded badge. */
+  /* The logo has its own dark background, so show it as a rounded badge.
+     The artwork runs flush to the edges of the source PNG, which made it look
+     clipped, so the badge is padded in a matching colour to give it margin. */
   .header__logo {
     width: auto;
-    height: 3rem;
+    height: 4.25rem;
+    padding: 0.3rem;
+    background-color: #220a38;
     border-radius: var(--radius);
   }
 
   .header__nav {
     display: flex;
-    gap: var(--space-6);
+    gap: var(--space-8);
   }
 
   .header__nav a {
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    font-weight: 550;
+    position: relative;
+    padding-block: var(--space-2);
+    color: var(--color-text);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     text-decoration: none;
     white-space: nowrap;
+    transition: color 180ms ease;
   }
 
-  .header__nav a:hover,
-  .header__nav a[aria-current='page'] {
-    color: var(--color-text);
+  /* Links are black at rest, so hover fades out instead of in. */
+  .header__nav a:hover {
+    color: var(--color-text-muted);
   }
 
-  .header__nav a[aria-current='page'] {
-    text-decoration: underline;
-    text-decoration-color: var(--color-accent);
-    text-decoration-thickness: 2px;
-    text-underline-offset: 0.45em;
+  /* A 1px rule rather than an underline, so it sits flush and reads as a
+     marker instead of a link decoration. */
+  .header__nav a[aria-current='page']::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background-color: var(--color-text);
   }
 
   .header__cta {
-    padding: var(--space-2) var(--space-4);
-    font-size: var(--text-sm);
+    padding: var(--space-3) var(--space-6);
+    font-size: 0.8125rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   /* Narrow screens: the nav drops to its own row and scrolls sideways if it
      still doesn't fit, rather than squeezing the brand. */
   @media (max-width: 56rem) {
     .header__inner {
-      padding-top: var(--space-3);
+      padding-block: var(--space-3) 0;
     }
 
     .header__nav {
       order: 3;
       width: 100%;
       gap: var(--space-6);
-      padding-block: var(--space-3);
+      padding-block: var(--space-2) var(--space-3);
       overflow-x: auto;
       scrollbar-width: none;
     }
-  }
 
-  /* Phones: the CTA is already in the hero, so drop it from the bar, and
-     tighten the nav so all four links fit on a typical phone. */
-  @media (max-width: 30rem) {
-    .header__cta {
+    .header__nav::-webkit-scrollbar {
       display: none;
     }
+  }
 
-    .header__nav {
-      justify-content: space-between;
-      gap: var(--space-3);
+  /* Phones. The bar sticks to the top of a small screen, so it is kept
+     compact: a smaller logo and a nav row sized to the screen, so that all
+     four links are visible at once instead of the last one sliding off the
+     edge. "Join us" stays, because it is the one link to Linktree that is
+     always on screen. */
+  @media (max-width: 36rem) {
+    .header__inner {
+      padding-top: 0.625rem;
     }
 
+    .header__logo {
+      height: 3.25rem;
+      padding: 0.25rem;
+    }
+
+    .header__cta {
+      padding: var(--space-2) var(--space-4);
+    }
+
+    /* The gap is only a floor: space-between spreads the links across the row,
+       and the small floor lets them still fit on a 320px screen. */
+    .header__nav {
+      justify-content: space-between;
+      gap: var(--space-1);
+      padding-block: var(--space-1) var(--space-2);
+    }
+
+    /* Scales with the screen: about 12px on a 390px phone, capped at the
+       desktop size. Slightly tighter tracking buys the last few pixels. */
     .header__nav a {
-      font-size: 0.8125rem;
+      font-size: clamp(0.625rem, 3.1vw, 0.8125rem);
+      letter-spacing: 0.04em;
     }
   }
 </style>

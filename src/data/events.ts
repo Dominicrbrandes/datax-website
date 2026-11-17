@@ -134,8 +134,24 @@ export interface PastEvent {
 /**
  * Past events, newest semester first. Within a semester, list them in the order
  * they should appear.
+ *
+ * The first event here that has a photo is also featured on the home page
+ * ("Recently"), so adding a new event at the top updates the home page too.
  */
 export const pastEvents: PastEvent[] = [
+  {
+    title: 'Qualcomm Finance Panel',
+    semester: 'Fall 2026',
+    date: '2026-11-04',
+    caption:
+      'Three finance professionals from Qualcomm, Jusraunaq Farmahan, Alicia Hsiao, and Nikhita Patel, talked about how they use data day to day and took questions from members.',
+    photos: [
+      {
+        src: '/images/events/fall-2026-qualcomm-finance-panel.jpg',
+        alt: 'DataX members and the Qualcomm panelists standing together in front of the Qualcomm Finance Panel slide',
+      },
+    ],
+  },
   {
     title: 'Biostatistics in Action: Inside a Clinical Study',
     semester: 'Spring 2026',

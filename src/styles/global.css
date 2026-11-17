@@ -1,39 +1,57 @@
 /* ---------------------------------------------------------------------------
    Design tokens.
-   Change a value here and it updates everywhere on the site. The dark palette
-   below re-declares the same names, so you only ever style things once.
+   Change a value here and it updates everywhere on the site.
+
+   The palette is deliberately achromatic: black, white, and grey only.
+   Photography is the single source of color on the site. If you are tempted to
+   add a brand color here, add a better photograph instead.
    --------------------------------------------------------------------------- */
 
-:root {
-  color-scheme: light dark;
+/* Barlow, self-hosted. No network call, so the site renders identically
+   offline and on first paint. */
+@import '@fontsource/barlow/300.css';
+@import '@fontsource/barlow/400.css';
+@import '@fontsource/barlow/500.css';
+@import '@fontsource/barlow/600.css';
 
-  /* Color — light */
-  --color-bg: #fdfcff;
+:root {
+  /* The design is built for light. Forcing the scheme stops browsers from
+     auto-darkening form controls and scrollbars out from under it. */
+  color-scheme: light;
+
+  /* Color */
+  --color-bg: #ffffff;
   --color-surface: #ffffff;
-  --color-surface-alt: #f6f2fc;
-  --color-text: #1a1426;
-  --color-text-muted: #655c78;
-  --color-border: #e9e2f4;
-  --color-accent: #7c3aed;
-  --color-accent-hover: #6d28d9;
-  --color-accent-soft: #f1ebfe;
+  --color-surface-alt: #f4f4f4;
+  --color-text: #0a0a0a;
+  --color-text-muted: #6e6e6e;
+  --color-border: #e3e3e3;
+  /* "Accent" is just ink. The name is kept so page-level styles that reference
+     it keep working, they simply resolve to black now. */
+  --color-accent: #0a0a0a;
+  --color-accent-hover: #454545;
+  --color-accent-soft: #f4f4f4;
   --color-on-accent: #ffffff;
-  /* Hero wash — the two purple glows behind the top of the page. */
-  --color-glow-1: #e4d5fd;
-  --color-glow-2: #f7e0fa;
+  /* The hero glows are gone. Kept as transparent so any leftover reference
+     renders nothing rather than failing. */
+  --color-glow-1: transparent;
+  --color-glow-2: transparent;
+
+  /* Scrim over hero photography, so white type always clears AA contrast. */
+  --color-scrim: rgb(10 10 10 / 0.46);
 
   /* Type */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-    "Liberation Mono", monospace;
+  --font-sans: 'Barlow', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
+    'Liberation Mono', monospace;
 
   --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: clamp(1.25rem, 1.1rem + 0.7vw, 1.5rem);
-  --text-2xl: clamp(1.6rem, 1.3rem + 1.4vw, 2.25rem);
-  --text-3xl: clamp(2.1rem, 1.5rem + 2.8vw, 3.5rem);
+  --text-base: 1.0625rem;
+  --text-lg: 1.25rem;
+  --text-xl: clamp(1.35rem, 1.15rem + 0.9vw, 1.75rem);
+  --text-2xl: clamp(1.9rem, 1.4rem + 2.2vw, 3rem);
+  --text-3xl: clamp(2.6rem, 1.6rem + 4.6vw, 5.5rem);
 
   /* Space */
   --space-1: 0.25rem;
@@ -46,34 +64,15 @@
   --space-16: 4rem;
   --space-24: 6rem;
 
-  /* Shape */
-  --radius: 0.625rem;
-  --radius-lg: 1rem;
-  --shadow-sm: 0 1px 2px rgb(46 16 84 / 0.07);
-  --shadow: 0 4px 16px -2px rgb(46 16 84 / 0.10);
+  /* Shape. Panels get a soft radius, controls stay near-square, and nothing
+     casts a shadow. Depth is communicated with space, not blur. */
+  --radius: 2px;
+  --radius-lg: 14px;
+  --shadow-sm: none;
+  --shadow: none;
 
   /* Layout */
-  --content-width: 68rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: #0f0b18;
-    --color-surface: #181226;
-    --color-surface-alt: #1e1730;
-    --color-text: #f2eefa;
-    --color-text-muted: #a99fc0;
-    --color-border: #2f2545;
-    --color-accent: #a78bfa;
-    --color-accent-hover: #c4b5fd;
-    --color-accent-soft: #241b38;
-    --color-on-accent: #0f0b18;
-    --color-glow-1: #2c1d54;
-    --color-glow-2: #3b1f4e;
-
-    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
-    --shadow: 0 4px 20px -2px rgb(0 0 0 / 0.5);
-  }
+  --content-width: 78rem;
 }
 
 /* ---------------------------------------------------------------------------
@@ -106,17 +105,19 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans);
   font-size: var(--text-base);
-  line-height: 1.65;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
+/* Headlines are large and light rather than small and bold. Weight comes from
+   size and tracking, which is what makes the reference material feel calm. */
 h1,
 h2,
 h3 {
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  line-height: 1.04;
+  letter-spacing: -0.025em;
   text-wrap: balance;
-  font-weight: 650;
+  font-weight: 400;
 }
 
 p {
@@ -131,18 +132,18 @@ svg {
 }
 
 a {
-  color: var(--color-accent);
+  color: var(--color-text);
   text-underline-offset: 0.2em;
 }
 
 a:hover {
-  color: var(--color-accent-hover);
+  color: var(--color-text-muted);
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-text);
   outline-offset: 3px;
-  border-radius: var(--space-1);
+  border-radius: var(--radius);
 }
 
 /* ---------------------------------------------------------------------------
@@ -153,17 +154,18 @@ a:hover {
   width: 100%;
   max-width: var(--content-width);
   margin-inline: auto;
-  padding-inline: var(--space-6);
+  padding-inline: var(--space-8);
 }
 
 .section {
-  padding-block: var(--space-16);
+  padding-block: var(--space-24);
 }
 
+/* Small, letterspaced, uppercase label that sits above a headline. */
 .eyebrow {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--color-text-muted);
 }
@@ -172,25 +174,23 @@ a:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-6);
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-8);
   border: 1px solid transparent;
   border-radius: var(--radius);
-  font-size: var(--text-base);
-  font-weight: 600;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: 0.02em;
   line-height: 1.2;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 120ms ease, border-color 120ms ease,
-    transform 120ms ease;
-}
-
-.button:active {
-  transform: translateY(1px);
+  transition: background-color 180ms ease, border-color 180ms ease,
+    color 180ms ease;
 }
 
 .button--primary {
-  background-color: var(--color-accent);
+  background-color: var(--color-text);
   color: var(--color-on-accent);
 }
 
@@ -201,46 +201,73 @@ a:hover {
 
 .button--secondary {
   background-color: transparent;
-  border-color: var(--color-border);
+  border-color: var(--color-text);
   color: var(--color-text);
 }
 
 .button--secondary:hover {
-  background-color: var(--color-surface-alt);
-  color: var(--color-text);
+  background-color: var(--color-text);
+  color: var(--color-on-accent);
 }
 
 /* Sections */
 .section__title {
-  margin-top: var(--space-2);
+  margin-top: var(--space-3);
   font-size: var(--text-2xl);
 }
 
-/* Cards */
+/* Cards: flat grey panels. No border, no shadow, no translucency. */
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
   gap: var(--space-6);
-  margin-top: var(--space-8);
+  margin-top: var(--space-12);
   padding: 0;
   list-style: none;
 }
 
 .card {
-  padding: var(--space-6);
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  padding: var(--space-8);
+  background-color: var(--color-surface-alt);
+  border: 0;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 
 .card__title {
   font-size: var(--text-lg);
+  font-weight: 500;
 }
 
 .card__body {
-  margin-top: var(--space-2);
+  margin-top: var(--space-3);
   color: var(--color-text-muted);
+}
+
+/* Small flat pill, as used for the category tags in the reference. */
+.tag {
+  display: inline-block;
+  padding: 0.25rem var(--space-3);
+  background-color: var(--color-bg);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--color-text);
+}
+
+/* The thin circular arrow that sits in the corner of an image tile. */
+.arrow {
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 1rem;
+  line-height: 1;
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
 /* Visually hidden, still announced by screen readers. */
@@ -269,4 +296,14 @@ a:hover {
 
 .skip-link:focus {
   transform: translateY(0);
+}
+
+@media (max-width: 48rem) {
+  .container {
+    padding-inline: var(--space-6);
+  }
+
+  .section {
+    padding-block: var(--space-16);
+  }
 }

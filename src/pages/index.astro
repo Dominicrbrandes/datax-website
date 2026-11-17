@@ -1,58 +1,149 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { club, meeting, links, highlights } from '../config';
+import { club, meeting, links, highlights, welcome } from '../config';
+import { pastEvents } from '../data/events';
+import UpNext from '../components/UpNext.astro';
+import { url } from '../utils/url';
+import { formatDate } from '../utils/date';
 
+/** Bottom of the page: the Discord invite, or email if there is no Discord. */
 const joinHref = links.discord || (links.email ? `mailto:${links.email}` : '');
 const joinLabel = links.discord ? 'Join our Discord' : 'Email us';
+
+/**
+ * Top of the page: one social button only, and it is Instagram, because that
+ * is where the club posts first. Falls back to the Discord/email link above if
+ * Instagram is ever cleared from config.ts.
+ */
+const heroHref = links.instagram || joinHref;
+const heroLabel = links.instagram ? 'Follow us on Instagram' : joinLabel;
+
+/**
+ * One quiet text link under the hero buttons. Instagram is not repeated here,
+ * since it is already the button.
+ */
+const follow = [{ label: 'Linktree', href: links.linktree }].filter((item) => item.href !== '');
+
+/**
+ * Real club photography carries the hero, the three tiles, the "Recently"
+ * feature, and the closing band.
+ *
+ * Rule for this page: every photo is used once, and no two look alike. The
+ * tiles are deliberately three different kinds of picture (a speaker at the
+ * screen, members at their desks, a group shot) so they never read as the
+ * same photo twice.
+ */
+const heroPhoto = '/images/events/img-5385.jpg';
+const highlightPhotos = [
+  '/images/events/img-8165.jpg', // Guest Speakers: a speaker walking through code
+  '/images/events/img-9914.jpg', // Workshops: members following along at their desks
+  '/images/events/img-5414.jpg', // Community: members after a meeting
+];
+/**
+ * Outdoor social, used once and large rather than twice and small.
+ * The -bright variant is gamma-lifted and upscaled from the 640x480 original,
+ * which was too dark and too small to read at full-bleed size.
+ */
+const closingPhoto = '/images/events/social-bright.jpg';
+
+/**
+ * "Recently": the newest past event that has a photo, straight from
+ * src/data/events.ts. Photos already used elsewhere on this page are skipped,
+ * so adding events later can never put the same picture here twice.
+ */
+const usedPhotos = new Set([heroPhoto, ...highlightPhotos, closingPhoto]);
+const recent = pastEvents
+  .map((event) => ({ event, photo: event.photos?.find((photo) => !usedPhotos.has(photo.src)) }))
+  .find((entry) => entry.photo);
 ---
 
 <BaseLayout>
-  <!-- Hero -->
+  <!-- Hero: full-bleed photograph, headline overlaid bottom-left -->
   <section class="hero">
-    <div class="container hero__inner">
-      <div class="hero__copy">
-        <p class="eyebrow">{club.school}</p>
-        <h1 class="hero__title">{club.name}</h1>
-        <p class="hero__tagline">{club.tagline}</p>
-        <p class="hero__body">{club.description}</p>
+    <img class="hero__photo" src={url(heroPhoto)} alt="" fetchpriority="high" />
+    <div class="hero__scrim"></div>
 
-        <div class="hero__actions">
-          {
-            joinHref && (
-              <a class="button button--primary" href={joinHref}>
-                {joinLabel}
-              </a>
-            )
-          }
-          <a class="button button--secondary" href="#what-we-do">See what we do</a>
-        </div>
+    <div class="container hero__inner">
+      <p class="eyebrow hero__eyebrow">{club.school}</p>
+      <h1 class="hero__title">{club.name}</h1>
+      <p class="hero__tagline">{club.tagline}</p>
+      <p class="hero__welcome">{welcome}</p>
+
+      <div class="hero__actions">
+        {
+          heroHref && (
+            <a class="button hero__button hero__button--solid" href={heroHref}>
+              {heroLabel}
+            </a>
+          )
+        }
+        <a class="button hero__button hero__button--ghost" href="#what-we-do">See what we do</a>
       </div>
 
-      <aside class="meeting" aria-label="When we meet">
-        <p class="eyebrow">When we meet:</p>
-        <p class="meeting__day">{meeting.day}</p>
-        <p class="meeting__time">{meeting.time}</p>
-        <p class="meeting__where">{meeting.location}</p>
-        <p class="meeting__note">
-          Everyone is welcome, whatever your major or experience level. No application, no dues,
-          just learn.
-        </p>
-      </aside>
+      {
+        follow.length > 0 && (
+          <ul class="hero__follow" role="list">
+            {follow.map((item) => (
+              <li>
+                <a href={item.href}>{item.label}</a>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </div>
+  </section>
+
+  <!-- Next meeting, before anything else on the page -->
+  <UpNext />
+
+  <!-- Meeting strip -->
+  <section class="meeting">
+    <div class="container meeting__inner">
+      <div class="meeting__facts">
+        <div class="meeting__fact">
+          <p class="eyebrow">Day</p>
+          <p class="meeting__value">{meeting.day}</p>
+        </div>
+        <div class="meeting__fact">
+          <p class="eyebrow">Time</p>
+          <p class="meeting__value">{meeting.time}</p>
+        </div>
+        <div class="meeting__fact">
+          <p class="eyebrow">Where</p>
+          <p class="meeting__value">{meeting.location}</p>
+        </div>
+      </div>
+      <p class="meeting__note">
+        Everyone is welcome, whatever your major or experience level. No application, no dues, just
+        learn.
+      </p>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section class="section about" id="what-we-do">
+    <div class="container">
+      <p class="eyebrow">Who we are</p>
+      <p class="about__lede">{club.description}</p>
     </div>
   </section>
 
   <!-- What we do -->
-  <section class="section" id="what-we-do">
+  <section class="section section--top">
     <div class="container">
       <p class="eyebrow">What we do</p>
-      <h2 class="section__title">Three ways to get involved</h2>
+      <h2 class="display">Three ways to get involved.</h2>
 
-      <ul class="cards" role="list">
+      <ul class="tiles" role="list">
         {
-          highlights.map((item) => (
-            <li class="card">
-              <h3 class="card__title">{item.title}</h3>
-              <p class="card__body">{item.body}</p>
+          highlights.map((item, i) => (
+            <li class="tile">
+              <div class="tile__media">
+                <img src={url(highlightPhotos[i % highlightPhotos.length])} alt="" loading="lazy" />
+                <span class="tile__label">{item.title}</span>
+              </div>
+              <p class="tile__body">{item.body}</p>
             </li>
           ))
         }
@@ -60,144 +151,511 @@ const joinLabel = links.discord ? 'Join our Discord' : 'Email us';
     </div>
   </section>
 
-  <!-- Get involved -->
-  <section class="section">
-    <div class="container">
-      <div class="cta">
-        <h2 class="cta__title">Come to the next one</h2>
-        <p class="cta__body">
-          The easiest way to start is to show up {meeting.day.toLowerCase()} at {meeting.time} in {
-            meeting.location
-          }. Bring a laptop if you have one, we will have something for you to work on either way.
-        </p>
+  <!-- Recently: the newest past event with a photo -->
+  {
+    recent && recent.photo && (
+      <section class="recent">
+        <div class="container recent__inner">
+          <a class="recent__media" href={url('/past-events')}>
+            <img src={url(recent.photo.src)} alt={recent.photo.alt} loading="lazy" />
+          </a>
+
+          <div class="recent__body">
+            <p class="eyebrow">Recently</p>
+            <h2 class="recent__title">
+              {/[.!?]$/.test(recent.event.title) ? recent.event.title : `${recent.event.title}.`}
+            </h2>
+            {recent.event.date && (
+              <p class="recent__meta">
+                <time datetime={recent.event.date}>{formatDate(recent.event.date)}</time>
+              </p>
+            )}
+            <p class="recent__caption">{recent.event.caption}</p>
+            <a class="button button--secondary recent__button" href={url('/past-events')}>
+              See past events
+            </a>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <!-- Closing -->
+  <section class="closing">
+    <img
+      class="closing__photo"
+      src={url(closingPhoto)}
+      alt="DataX members at an outdoor social on campus at sunset"
+      loading="lazy"
+    />
+    <div class="closing__scrim"></div>
+
+    <div class="container closing__inner">
+      <p class="eyebrow closing__eyebrow">Join us</p>
+      <h2 class="closing__title">Come to the next one.</h2>
+      <p class="closing__body">
+        The easiest way to start is to show up {meeting.day} at {meeting.time} in {
+          meeting.location
+        }. Bring a laptop if you have one, we will have something for you to work on either way.
+      </p>
+
+      <div class="closing__actions">
         {
           joinHref && (
-            <a class="button button--primary" href={joinHref}>
+            <a class="button closing__button closing__button--solid" href={joinHref}>
               {joinLabel}
             </a>
           )
         }
+        <a class="button closing__button closing__button--ghost" href={url('/calendar')}>
+          See the calendar
+        </a>
       </div>
     </div>
   </section>
 </BaseLayout>
 
 <style>
-  /* Hero */
+  /* ---- Hero ---------------------------------------------------------- */
+
   .hero {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    min-height: min(86vh, 54rem);
     padding-block: var(--space-24) var(--space-16);
-    /* Two overlapping glows read richer than one flat tint. Both colors are
-       tokens, so the dark palette swaps them without touching this rule. */
-    background-image:
-      radial-gradient(58rem 34rem at 6% -16%, var(--color-glow-1), transparent 66%),
-      radial-gradient(50rem 30rem at 94% -6%, var(--color-glow-2), transparent 68%);
+    overflow: hidden;
+    background-color: var(--color-text);
+  }
+
+  .hero__photo,
+  .hero__scrim {
+    position: absolute;
+    inset: 0;
+  }
+
+  .hero__photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Bias the crop downward: the top of the frame is ceiling, the bottom is
+       the room full of people, which is what the photo is actually about. */
+    object-position: 50% 72%;
+  }
+
+  /* Flat scrim, not a blur. Keeps white type above AA contrast on any photo. */
+  .hero__scrim {
+    background-image: linear-gradient(
+      to top,
+      rgb(10 10 10 / 0.78) 0%,
+      rgb(10 10 10 / 0.42) 45%,
+      rgb(10 10 10 / 0.25) 100%
+    );
   }
 
   .hero__inner {
-    display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-    gap: var(--space-12);
-    align-items: start;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero__eyebrow {
+    color: rgb(255 255 255 / 0.72);
   }
 
   .hero__title {
-    margin-top: var(--space-3);
+    margin-top: var(--space-4);
+    color: #fff;
     font-size: var(--text-3xl);
-    font-weight: 750;
+    font-weight: 300;
+    letter-spacing: -0.03em;
   }
 
   .hero__tagline {
-    margin-top: var(--space-4);
-    max-width: 34ch;
+    margin-top: var(--space-6);
+    max-width: 30ch;
+    color: #fff;
     font-size: var(--text-xl);
-    color: var(--color-text);
+    font-weight: 300;
+    line-height: 1.25;
   }
 
-  .hero__body {
+  /* Sits directly under the tagline so it is read as part of the pitch. */
+  .hero__welcome {
     margin-top: var(--space-4);
-    max-width: 58ch;
-    color: var(--color-text-muted);
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .hero__actions {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-3);
+    gap: var(--space-4);
+    margin-top: var(--space-10, 2.5rem);
+  }
+
+  .hero__button--solid {
+    background-color: #fff;
+    color: var(--color-text);
+  }
+
+  .hero__button--solid:hover {
+    background-color: rgb(255 255 255 / 0.85);
+    color: var(--color-text);
+  }
+
+  .hero__button--ghost {
+    border-color: rgb(255 255 255 / 0.65);
+    color: #fff;
+  }
+
+  .hero__button--ghost:hover {
+    background-color: #fff;
+    color: var(--color-text);
+  }
+
+  /* Linktree as a quiet text link under the buttons, so it is on screen the
+     moment the page opens, on a phone as well as a laptop. */
+  .hero__follow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-8);
     margin-top: var(--space-8);
+    padding: 0;
+    list-style: none;
   }
 
-  /* Meeting card */
+  .hero__follow a {
+    display: inline-block;
+    padding-block: var(--space-1);
+    border-bottom: 1px solid rgb(255 255 255 / 0.55);
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: border-color 180ms ease;
+  }
+
+  .hero__follow a:hover {
+    border-bottom-color: #fff;
+    color: #fff;
+  }
+
+  /* ---- Meeting strip -------------------------------------------------- */
+
   .meeting {
-    padding: var(--space-6);
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow);
+    padding-block: var(--space-12);
+    border-bottom: 1px solid var(--color-border);
   }
 
-  .meeting__day {
+  .meeting__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: start;
+    justify-content: space-between;
+    gap: var(--space-8);
+  }
+
+  .meeting__facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-16);
+  }
+
+  .meeting__value {
     margin-top: var(--space-2);
     font-size: var(--text-xl);
-    font-weight: 650;
+    font-weight: 300;
     letter-spacing: -0.02em;
-  }
-
-  .meeting__time {
-    font-size: var(--text-xl);
-    font-weight: 650;
-    color: var(--color-accent);
-    letter-spacing: -0.02em;
-  }
-
-  .meeting__where {
-    margin-top: var(--space-1);
-    color: var(--color-text-muted);
   }
 
   .meeting__note {
-    margin-top: var(--space-4);
-    padding-top: var(--space-4);
-    border-top: 1px solid var(--color-border);
+    max-width: 34ch;
+    color: var(--color-text-muted);
     font-size: var(--text-sm);
+  }
+
+  /* ---- About ---------------------------------------------------------- */
+
+  .about__lede {
+    margin-top: var(--space-6);
+    max-width: 44ch;
+    font-size: var(--text-xl);
+    font-weight: 300;
+    line-height: 1.35;
+    letter-spacing: -0.015em;
+  }
+
+  .section--top {
+    padding-top: 0;
+  }
+
+  .display {
+    margin-top: var(--space-4);
+    font-size: var(--text-2xl);
+    font-weight: 300;
+  }
+
+  /* ---- Tiles ---------------------------------------------------------- */
+
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    gap: var(--space-8);
+    margin-top: var(--space-12);
+    padding: 0;
+    list-style: none;
+  }
+
+  .tile__media {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    background-color: var(--color-surface-alt);
+  }
+
+  .tile__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 500ms ease;
+  }
+
+  .tile:hover .tile__media img {
+    transform: scale(1.04);
+  }
+
+  /* Label sits on the photo, as in the reference tiles. */
+  .tile__label {
+    position: absolute;
+    left: var(--space-6);
+    bottom: var(--space-6);
+    right: var(--space-6);
+    z-index: 1;
+    color: #fff;
+    font-size: var(--text-lg);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    text-shadow: 0 1px 12px rgb(10 10 10 / 0.55);
+  }
+
+  .tile__media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(
+      to top,
+      rgb(10 10 10 / 0.6) 0%,
+      rgb(10 10 10 / 0) 55%
+    );
+  }
+
+  .tile__body {
+    margin-top: var(--space-4);
     color: var(--color-text-muted);
   }
 
-  /* Closing CTA */
-  .cta {
-    padding: var(--space-12) var(--space-8);
-    text-align: center;
+  /* ---- Recently --------------------------------------------------------
+     One photograph shown whole, next to its caption. The picture is a wide
+     group shot, so it is never cropped: the frame takes the photo's own
+     shape instead of forcing it into a tile. */
+
+  .recent {
+    padding-block: var(--space-24);
     background-color: var(--color-surface-alt);
-    border: 1px solid var(--color-border);
+  }
+
+  .recent__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    align-items: center;
+    gap: var(--space-16);
+  }
+
+  .recent__media {
+    display: block;
+    overflow: hidden;
     border-radius: var(--radius-lg);
   }
 
-  .cta__title {
-    font-size: var(--text-2xl);
+  .recent__media img {
+    width: 100%;
+    transition: transform 500ms ease;
   }
 
-  .cta__body {
-    max-width: 52ch;
-    margin: var(--space-4) auto 0;
+  .recent__media:hover img {
+    transform: scale(1.03);
+  }
+
+  .recent__title {
+    margin-top: var(--space-4);
+    font-size: var(--text-2xl);
+    font-weight: 300;
+  }
+
+  .recent__meta {
+    margin-top: var(--space-4);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .recent__caption {
+    margin-top: var(--space-4);
     color: var(--color-text-muted);
   }
 
-  .cta .button {
+  .recent__button {
     margin-top: var(--space-8);
   }
 
-  /* Stack the hero on narrow screens. */
-  @media (max-width: 48rem) {
-    .hero {
-      padding-block: var(--space-16) var(--space-12);
+  @media (max-width: 56rem) {
+    .recent {
+      padding-block: var(--space-16);
     }
 
-    .hero__inner {
+    .recent__inner {
       grid-template-columns: minmax(0, 1fr);
       gap: var(--space-8);
     }
+  }
 
-    .cta {
-      padding: var(--space-8) var(--space-6);
+  /* ---- Closing --------------------------------------------------------
+     Full-bleed photograph rather than a headline stranded on white. The old
+     version left most of the band empty, which read as unfinished. */
+
+  /* Photo behind the copy. The group of people sits low and left in this frame,
+     so the copy is anchored to the top and the scrim is weighted top-down: the
+     darkening lands on sky and treeline, which carry no detail, and thins out
+     before it reaches the people on the grass. */
+  .closing {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    min-height: 38rem;
+    padding-block: var(--space-16) var(--space-24);
+    overflow: hidden;
+    background-color: var(--color-text);
+  }
+
+  .closing__photo,
+  .closing__scrim {
+    position: absolute;
+    inset: 0;
+  }
+
+  .closing__photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Favour the lower half of the frame, where the social actually is. */
+    object-position: 50% 68%;
+  }
+
+  .closing__scrim {
+    background-image: linear-gradient(
+      to bottom,
+      rgb(10 10 10 / 0.74) 0%,
+      rgb(10 10 10 / 0.58) 28%,
+      rgb(10 10 10 / 0.3) 55%,
+      rgb(10 10 10 / 0.08) 78%,
+      rgb(10 10 10 / 0) 100%
+    );
+  }
+
+  .closing__inner {
+    position: relative;
+    z-index: 1;
+  }
+
+  .closing__eyebrow {
+    color: rgb(255 255 255 / 0.72);
+  }
+
+  .closing__title {
+    margin-top: var(--space-4);
+    max-width: 16ch;
+    color: #fff;
+    font-size: var(--text-2xl);
+    font-weight: 300;
+  }
+
+  .closing__body {
+    max-width: 44ch;
+    margin-top: var(--space-6);
+    font-size: var(--text-lg);
+    color: rgb(255 255 255 / 0.78);
+  }
+
+  .closing__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-top: var(--space-12);
+  }
+
+  .closing__button--solid {
+    background-color: #fff;
+    color: var(--color-text);
+  }
+
+  .closing__button--solid:hover {
+    background-color: rgb(255 255 255 / 0.85);
+    color: var(--color-text);
+  }
+
+  .closing__button--ghost {
+    border-color: rgb(255 255 255 / 0.65);
+    color: #fff;
+  }
+
+  .closing__button--ghost:hover {
+    background-color: #fff;
+    color: var(--color-text);
+  }
+
+  @media (max-width: 48rem) {
+    .hero {
+      min-height: 32rem;
+      padding-block: var(--space-16) var(--space-12);
+    }
+
+    /* On a phone the crop puts the bright projector screen directly behind
+       the copy, so the scrim is a step heavier here to keep the text clear. */
+    .hero__scrim {
+      background-image: linear-gradient(
+        to top,
+        rgb(10 10 10 / 0.86) 0%,
+        rgb(10 10 10 / 0.62) 50%,
+        rgb(10 10 10 / 0.42) 100%
+      );
+    }
+
+    .meeting__facts {
+      gap: var(--space-8);
+    }
+
+    .closing {
+      min-height: 30rem;
+      padding-block: var(--space-12) var(--space-16);
+    }
+
+    /* Narrow screens leave less clear space, so carry the scrim a bit further
+       down to keep the body copy legible. */
+    .closing__scrim {
+      background-image: linear-gradient(
+        to bottom,
+        rgb(10 10 10 / 0.8) 0%,
+        rgb(10 10 10 / 0.66) 40%,
+        rgb(10 10 10 / 0.38) 70%,
+        rgb(10 10 10 / 0.12) 100%
+      );
     }
   }
 </style>
